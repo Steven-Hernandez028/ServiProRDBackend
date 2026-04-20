@@ -15,6 +15,8 @@ public interface IAuthService
     Task<AuthResponse?> RegisterClientAsync(RegisterClientRequest request);
     Task<AuthResponse?> RegisterProviderAsync(RegisterProviderRequest request);
     Task<UserDTO?> GetUserByIdAsync(Guid userId);
+    Task<UserDTO?> UpdateProfileAsync(Guid userId, UpdateProfileRequest request);
+    Task<UserDTO?> RegisterAdminAsync(RegisterAdminRequest request);
 }
 
 public class AuthService : IAuthService
@@ -126,6 +128,49 @@ public class AuthService : IAuthService
     {
         var user = await _context.Users.FindAsync(userId);
         return user == null ? null : MapToUserDTO(user);
+    }
+
+    public async Task<UserDTO?> UpdateProfileAsync(Guid userId, UpdateProfileRequest request)
+    {
+        var user = await _context.Users
+            .Include(u => u.Client)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user == null) return null;
+
+        if (request.Name != null) user.Name = request.Name;
+        if (request.Phone != null) user.Phone = request.Phone;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        if (user.Client != null)
+        {
+            if (request.City != null) user.Client.City = request.City;
+            if (request.Address != null) user.Client.Address = request.Address;
+            user.Client.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+        return MapToUserDTO(user);
+    }
+
+    public async Task<UserDTO?> RegisterAdminAsync(RegisterAdminRequest request)
+    {
+        if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+            return null;
+
+        var user = new User
+        {
+            Email = request.Email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            Name = request.Name,
+            Phone = request.Phone,
+            Role = UserRole.Admin
+        };
+
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        return MapToUserDTO(user);
     }
 
     private string GenerateJwtToken(User user)

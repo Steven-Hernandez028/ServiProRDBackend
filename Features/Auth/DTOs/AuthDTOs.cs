@@ -82,6 +82,39 @@ public class RegisterProviderRequest
     public string? Availability { get; set; }
 }
 
+public class RegisterAdminRequest
+{
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    [MinLength(6)]
+    public string Password { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(20)]
+    public string? Phone { get; set; }
+}
+
+public class UpdateProfileRequest
+{
+    [MaxLength(150)]
+    public string? Name { get; set; }
+
+    [MaxLength(20)]
+    public string? Phone { get; set; }
+
+    [MaxLength(100)]
+    public string? City { get; set; }
+
+    [MaxLength(500)]
+    public string? Address { get; set; }
+}
+
 public class AuthResponse
 {
     public string Token { get; set; } = string.Empty;

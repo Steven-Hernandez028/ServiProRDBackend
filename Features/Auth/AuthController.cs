@@ -54,11 +54,36 @@ public class AuthController : ControllerBase
         return CreatedAtAction(nameof(GetCurrentUser), result.User);
     }
 
+    [Authorize(Roles = "Admin")]
+    [HttpPost("register/admin")]
+    public async Task<ActionResult<UserDTO>> RegisterAdmin([FromBody] RegisterAdminRequest request)
+    {
+        var user = await _authService.RegisterAdminAsync(request);
+        if (user == null)
+            return BadRequest(new { message = "El email ya esta registrado" });
+
+        return CreatedAtAction(nameof(GetCurrentUser), user);
+    }
+
     [HttpPost("logout")]
     public IActionResult Logout()
     {
         Response.Cookies.Delete(CookieName, new CookieOptions { Path = "/" });
         return NoContent();
+    }
+
+    [Authorize]
+    [HttpPut("me")]
+    public async Task<ActionResult<UserDTO>> UpdateProfile([FromBody] UpdateProfileRequest request)
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        var user = await _authService.UpdateProfileAsync(userId, request);
+        if (user == null) return NotFound();
+
+        return Ok(user);
     }
 
     [Authorize]
