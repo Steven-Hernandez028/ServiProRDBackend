@@ -31,7 +31,7 @@ public class AuthService : IAuthService
     public async Task<AuthResponse?> LoginAsync(LoginRequest request)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Email == request.Email && u.Role == request.Role);
+            .FirstOrDefaultAsync(u => u.Email == request.Email);
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             return null;

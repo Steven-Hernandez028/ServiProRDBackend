@@ -4,7 +4,10 @@
       "Bash(dotnet tool *)",
       "Bash(dotnet restore *)",
       "Bash(dotnet build *)",
-      "Bash(dotnet run *)"
+      "Bash(dotnet run *)",
+      "WebFetch(domain:learning.postman.com)",
+      "WebFetch(domain:schema.postman.com)",
+      "Bash(dotnet --version)"
     ]
   }
 }

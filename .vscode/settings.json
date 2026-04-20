@@ -1,0 +1,8 @@
+{
+    "files.exclude": {
+        "**/.claude": true,
+        "**/bin": true,
+        "**/obj": true,
+        "**/Properties": true
+    }
+}
