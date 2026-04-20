@@ -9,41 +9,56 @@ namespace ServiPro.API.Features.Auth;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService _authService;
+    private const string CookieName = "auth_token";
+    private const int CookieLifetimeDays = 7;
 
-    public AuthController(IAuthService authService)
+    private readonly IAuthService _authService;
+    private readonly IWebHostEnvironment _env;
+
+    public AuthController(IAuthService authService, IWebHostEnvironment env)
     {
         _authService = authService;
+        _env = env;
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
+    public async Task<ActionResult<UserDTO>> Login([FromBody] LoginRequest request)
     {
         var result = await _authService.LoginAsync(request);
         if (result == null)
             return Unauthorized(new { message = "Credenciales invalidas" });
 
-        return Ok(result);
+        SetAuthCookie(result.Token);
+        return Ok(result.User);
     }
 
     [HttpPost("register/client")]
-    public async Task<ActionResult<AuthResponse>> RegisterClient([FromBody] RegisterClientRequest request)
+    public async Task<ActionResult<UserDTO>> RegisterClient([FromBody] RegisterClientRequest request)
     {
         var result = await _authService.RegisterClientAsync(request);
         if (result == null)
             return BadRequest(new { message = "El email ya esta registrado" });
 
-        return CreatedAtAction(nameof(GetCurrentUser), result);
+        SetAuthCookie(result.Token);
+        return CreatedAtAction(nameof(GetCurrentUser), result.User);
     }
 
     [HttpPost("register/provider")]
-    public async Task<ActionResult<AuthResponse>> RegisterProvider([FromBody] RegisterProviderRequest request)
+    public async Task<ActionResult<UserDTO>> RegisterProvider([FromBody] RegisterProviderRequest request)
     {
         var result = await _authService.RegisterProviderAsync(request);
         if (result == null)
             return BadRequest(new { message = "El email ya esta registrado" });
 
-        return CreatedAtAction(nameof(GetCurrentUser), result);
+        SetAuthCookie(result.Token);
+        return CreatedAtAction(nameof(GetCurrentUser), result.User);
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete(CookieName, new CookieOptions { Path = "/" });
+        return NoContent();
     }
 
     [Authorize]
@@ -59,5 +74,17 @@ public class AuthController : ControllerBase
             return NotFound();
 
         return Ok(user);
+    }
+
+    private void SetAuthCookie(string token)
+    {
+        Response.Cookies.Append(CookieName, token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = !_env.IsDevelopment(),
+            SameSite = SameSiteMode.Lax,
+            Expires = DateTimeOffset.UtcNow.AddDays(CookieLifetimeDays),
+            Path = "/"
+        });
     }
 }
